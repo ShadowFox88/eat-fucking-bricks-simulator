@@ -79,7 +79,7 @@ local function spawnBrickOnto(part: Part)
 end
 
 local function onPlayerAdded(rawPlayer: Player)
-	local player = rawPlayer :: CustomPlayer.Type
+	local player = CustomPlayer.get(rawPlayer)
 
 	Leaderstats.init(player)
 end
