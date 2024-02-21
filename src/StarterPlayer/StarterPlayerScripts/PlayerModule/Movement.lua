@@ -1,9 +1,13 @@
 --!strict
 local ContextActionService = game:GetService("ContextActionService")
-local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 
 local player = Players.LocalPlayer
-local rawMovementVelocity = Vector3.zero
+local unprocessedMovementVelocity = Vector3.zero
+local fallingVelocity = Vector3.zero
 local Movement = {}
 
 type UnitVector = Vector3
@@ -14,7 +18,27 @@ export type Directions = {
 	D: UnitVector,
 }
 
-type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextActionResult?
+local function applyGravity(delta: number)
+	local playerTorsoUnderside = player.Character.Torso.Position - Vector3.new(0, player.Character.Torso.Size.Y / 2)
+	local directlyBelow = Vector3.new(0, -1 / 10, 0)
+	local parameters = RaycastParams.new()
+	parameters.FilterType = Enum.RaycastFilterType.Include
+	parameters.FilterDescendantsInstances = { workspace.Baseplate, workspace.SpawnLocation }
+	parameters.IgnoreWater = true
+	parameters.BruteForceAllSlow = true
+	local collision = workspace:Raycast(playerTorsoUnderside, directlyBelow, parameters)
+
+	if collision then
+		player.Character.Movement.VectorVelocity += fallingVelocity
+		fallingVelocity = Vector3.zero
+
+		return
+	end
+
+	local newFallingOffsetVelocity = Vector3.new(0, delta * workspace.Gravity, 0)
+	fallingVelocity -= newFallingOffsetVelocity
+	player.Character.Movement.VectorVelocity -= newFallingOffsetVelocity
+end
 
 local function bindMovementToPlayerCharacter(playerCharacter: Model, directions: Directions, callback: ActionHandler?)
 	if callback == nil then
@@ -39,12 +63,13 @@ local function bindMovementToPlayerCharacter(playerCharacter: Model, directions:
 				direction = -direction
 			end
 
-			rawMovementVelocity += direction
+			unprocessedMovementVelocity += direction
 
-			if rawMovementVelocity == Vector3.zero then
-				playerMovement.VectorVelocity = Vector3.zero
+			if unprocessedMovementVelocity == Vector3.zero then
+				player.Character.Movement.VectorVelocity = Vector3.zero
 			else
-				playerMovement.VectorVelocity = rawMovementVelocity.Unit * playerHumanoid.WalkSpeed
+				player.Character.Movement.VectorVelocity = unprocessedMovementVelocity.Unit
+					* player.Character.Humanoid.WalkSpeed
 			end
 
 			return nil
@@ -62,6 +87,7 @@ local function bindMovementToPlayerCharacter(playerCharacter: Model, directions:
 		Enum.KeyCode.S,
 		Enum.KeyCode.D
 	)
+	RunService.RenderStepped:Connect(applyGravity)
 end
 
 function Movement.init(directions: Directions, callback: ActionHandler?)
