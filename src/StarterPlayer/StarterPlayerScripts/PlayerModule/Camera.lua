@@ -15,11 +15,6 @@ local function bindCameraToPlayerCharacter()
 	end)
 end
 
--- TODO: below is for later, remove this comment upon consumption
-function Camera.getFacingDirection()
-	return Vector3.new(playerCamera.CFrame.LookVector.X, 0, playerCamera.CFrame.LookVector.Z)
-end
-
 function Camera.init()
 	if player.Character then
 		bindCameraToPlayerCharacter()
