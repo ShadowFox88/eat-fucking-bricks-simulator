@@ -1,12 +1,9 @@
+--!strict
+local Camera = require(script.Camera)
+local Directions = require(script.Directions)
 local Movement = require(script.Movement)
 
-local DIRECTIONS: Movement.Directions = {
-	W = Vector3.new(0, 0, 1),
-	A = Vector3.new(-1, 0, 0),
-	S = Vector3.new(0, 0, -1),
-	D = Vector3.new(1, 0, 0),
-}
-
-Movement.init(DIRECTIONS)
+Movement.init(Directions)
+-- Camera.init()
 
 return nil

@@ -8,17 +8,17 @@ local RunService = game:GetService("RunService")
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 
 local player = CustomPlayer.get()
-local unprocessedMovementVelocity = Vector3.zero
+local movementOffset = Vector3.zero
 local fallingVelocity = Vector3.zero
 local Movement = {}
 
 type UnitVector = Vector3
 type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextActionResult?
 export type Directions = {
-	W: UnitVector,
-	A: UnitVector,
-	S: UnitVector,
-	D: UnitVector,
+	W: () -> UnitVector,
+	A: () -> UnitVector,
+	S: () -> UnitVector,
+	D: () -> UnitVector,
 }
 
 local function applyGravity(delta: number)
@@ -54,23 +54,24 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 				return
 			end
 
-			local direction = directions[input.KeyCode.Name]
+			local offsetCallbackFound = directions[input.KeyCode.Name]
 
-			if not direction then
-				error(`Invalid direction {direction} during input {input.KeyCode.Name}`)
+			if not offsetCallbackFound then
+				error(`Invalid direction {offsetCallbackFound} during input {input.KeyCode.Name}`)
 			end
+
+			local offset = offsetCallbackFound()
 
 			if state == Enum.UserInputState.End then
-				direction = -direction
+				offset = -offset
 			end
 
-			unprocessedMovementVelocity += direction
+			movementOffset += offset
 
-			if unprocessedMovementVelocity == Vector3.zero then
+			if movementOffset == Vector3.zero then
 				player.Character.Movement.VectorVelocity = Vector3.zero
 			else
-				player.Character.Movement.VectorVelocity = unprocessedMovementVelocity.Unit
-					* player.Character.Humanoid.WalkSpeed
+				player.Character.Movement.VectorVelocity = movementOffset.Unit * player.Character.Humanoid.WalkSpeed
 			end
 
 			return nil
