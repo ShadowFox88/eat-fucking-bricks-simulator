@@ -4,6 +4,6 @@ local Directions = require(script.Directions)
 local Movement = require(script.Movement)
 
 Movement.init(Directions)
--- Camera.init()
+Camera.init()
 
 return nil
