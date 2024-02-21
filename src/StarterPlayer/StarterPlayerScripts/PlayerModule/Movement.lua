@@ -5,12 +5,13 @@ local RunService = game:GetService("RunService")
 
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 
-local player = Players.LocalPlayer
+local player = CustomPlayer.get()
 local unprocessedMovementVelocity = Vector3.zero
 local fallingVelocity = Vector3.zero
 local Movement = {}
 
 type UnitVector = Vector3
+type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextActionResult?
 export type Directions = {
 	W: UnitVector,
 	A: UnitVector,
@@ -40,7 +41,7 @@ local function applyGravity(delta: number)
 	player.Character.Movement.VectorVelocity -= newFallingOffsetVelocity
 end
 
-local function bindMovementToPlayerCharacter(playerCharacter: Model, directions: Directions, callback: ActionHandler?)
+local function bindMovementToPlayerCharacter(directions: Directions, callback: ActionHandler?)
 	if callback == nil then
 		local function handleMovementDefault(
 			action: string,
@@ -51,8 +52,6 @@ local function bindMovementToPlayerCharacter(playerCharacter: Model, directions:
 				return
 			end
 
-			local playerMovement = playerCharacter:WaitForChild("Movement") :: LinearVelocity
-			local playerHumanoid = playerCharacter:WaitForChild("Humanoid") :: Humanoid
 			local direction = directions[input.KeyCode.Name]
 
 			if not direction then
@@ -92,11 +91,11 @@ end
 
 function Movement.init(directions: Directions, callback: ActionHandler?)
 	if player.Character then
-		bindMovementToPlayerCharacter(player.Character, directions, callback)
+		bindMovementToPlayerCharacter(directions, callback)
 	end
 
-	player.CharacterAdded:Connect(function(playerCharacter: Model)
-		bindMovementToPlayerCharacter(playerCharacter, directions, callback)
+	player.CharacterAdded:Connect(function()
+		bindMovementToPlayerCharacter(directions, callback)
 	end)
 end
 
