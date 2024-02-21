@@ -2,9 +2,6 @@ local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
-local playerCharacter = player.Character or player.CharacterAdded:Wait()
-local playerHumanoid: Humanoid = playerCharacter:WaitForChild("Humanoid")
-local playerMovement: LinearVelocity = playerCharacter:WaitForChild("Movement")
 local rawMovementVelocity = Vector3.zero
 local Movement = {}
 
@@ -16,37 +13,41 @@ export type Directions = {
 	D: UnitVector,
 }
 
-function Movement.default(directions: Directions)
-	return function(action: string, state: Enum.UserInputState, input: InputObject)
-		if state ~= Enum.UserInputState.Begin and state ~= Enum.UserInputState.End then
-			return
+type ActionHandler = (string, Enum.UserInputState, InputObject) -> ()
+
+local function bindMovementToPlayerCharacter(playerCharacter: Model, directions: Directions, callback: ActionHandler?)
+	if callback == nil then
+		local function handleMovementDefault(action: string, state: Enum.UserInputState, input: InputObject)
+			if state ~= Enum.UserInputState.Begin and state ~= Enum.UserInputState.End then
+				return
+			end
+
+			local playerMovement = playerCharacter:WaitForChild("Movement") :: LinearVelocity
+			local playerHumanoid = playerCharacter:WaitForChild("Humanoid") :: Humanoid
+			local direction = directions[input.KeyCode.Name]
+
+			if not direction then
+				error(`Invalid direction {direction} during input {input.KeyCode.Name}`)
+			end
+
+			if state == Enum.UserInputState.End then
+				direction = -direction
+			end
+
+			rawMovementVelocity += direction
+
+			if rawMovementVelocity == Vector3.zero then
+				playerMovement.VectorVelocity = Vector3.zero
+			else
+				playerMovement.VectorVelocity = rawMovementVelocity.Unit * playerHumanoid.WalkSpeed
+			end
 		end
 
-		local direction = directions[input.KeyCode.Name]
-
-		if not direction then
-			error(`Invalid direction {direction} during input {input.KeyCode.Name}`)
-		end
-
-		if state == Enum.UserInputState.End then
-			direction = -direction
-		end
-
-		rawMovementVelocity += direction
-
-		if rawMovementVelocity == Vector3.zero then
-			playerMovement.VectorVelocity = Vector3.zero
-		else
-			playerMovement.VectorVelocity = rawMovementVelocity.Unit * playerHumanoid.WalkSpeed
-		end
+		callback = handleMovementDefault
 	end
-end
-
-function Movement.init(directions: Directions, callback: ((string, Enum.UserInputState, InputObject) -> ())?)
-	callback = callback or Movement.default(directions)
 
 	ContextActionService:BindAction(
-		"movement",
+		"Movement",
 		callback,
 		false,
 		Enum.KeyCode.W,
@@ -54,6 +55,16 @@ function Movement.init(directions: Directions, callback: ((string, Enum.UserInpu
 		Enum.KeyCode.S,
 		Enum.KeyCode.D
 	)
+end
+
+function Movement.init(directions: Directions, callback: ActionHandler?)
+	if player.Character then
+		bindMovementToPlayerCharacter(player.Character, directions, callback)
+	end
+
+	player.CharacterAdded:Connect(function(playerCharacter: Model)
+		bindMovementToPlayerCharacter(playerCharacter, directions, callback)
+	end)
 end
 
 return Movement
