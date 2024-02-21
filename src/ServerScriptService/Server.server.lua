@@ -1,9 +1,13 @@
+--!strict
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
-local LEADERSTATS_TEMPLATE: Model = ServerStorage.leaderstats
+local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
+local Leaderstats = require(ReplicatedStorage.Leaderstats)
+
 local BASEPLATE = workspace:WaitForChild("Baseplate") :: Part
-local BRICK: Part = ServerStorage.Brick
+local BRICK = ServerStorage.Brick
 local debounces = {}
 
 local function calculatePositionOnTopOf(part: Part, brickHeight: number)
@@ -16,11 +20,16 @@ local function calculatePositionOnTopOf(part: Part, brickHeight: number)
 	return part.Position + offset
 end
 
-local function handleBrickTouched(hit: Part, newBrick: Part)
+local function handleBrickTouched(hit: BasePart, newBrick: Part)
 	local characterFound = hit:FindFirstAncestorOfClass("Model")
-	local playerFound = Players:GetPlayerFromCharacter(characterFound)
 
-	if not playerFound then
+	if not characterFound then
+		return
+	end
+
+	local playerFound = Players:GetPlayerFromCharacter(characterFound) :: CustomPlayer.Type?
+
+	if not (playerFound and Leaderstats.find(playerFound)) then
 		return
 	end
 
@@ -49,22 +58,18 @@ local function spawnBrickOnto(part: Part)
 	newBrick.Color = Color3.fromRGB(255, 255, 0)
 	newBrick.Position = calculatePositionOnTopOf(part, newBrick.Size.Y)
 
-	newBrick.Touched:Connect(function(hit: Part)
+	newBrick.Touched:Connect(function(hit: BasePart)
 		handleBrickTouched(hit, newBrick)
 	end)
 
-	newBrick.Parent = workspace
+	-- TODO: Remove any type
+	newBrick.Parent = workspace :: any
 end
 
-local function onPlayerAdded(player: Player)
-	local leaderstats = LEADERSTATS_TEMPLATE:Clone()
-	leaderstats.Parent = player
+local function onPlayerAdded(rawPlayer: Player)
+	local player = rawPlayer :: CustomPlayer.Type
 
-	leaderstats.BricksEaten.Changed:Connect(function(bricksEaten: number)
-		local playerChar = player.Character :: Model
-		local playerTorso: Part = playerChar.Torso
-		playerTorso.Size += Vector3.one
-	end)
+	Leaderstats.init(player)
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)
