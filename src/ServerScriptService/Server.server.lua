@@ -1,3 +1,4 @@
+--!strict
 local Players = game:GetService("Players")
 local ServerStorage = game:GetService("ServerStorage")
 
@@ -5,6 +6,18 @@ local LEADERSTATS_TEMPLATE: Model = ServerStorage.leaderstats
 local BASEPLATE = workspace:WaitForChild("Baseplate") :: Part
 local BRICK: Part = ServerStorage.Brick
 local debounces = {}
+
+type Leaderstats = Model & {
+	BricksEaten: IntValue,
+}
+type PlayerWithLeaderstats = Player & {
+	leaderstats: Leaderstats,
+}
+type PlayerCharacter = Model & {
+	Humanoid: Humanoid,
+	Movement: LinearVelocity,
+	Torso: Part,
+}
 
 local function calculatePositionOnTopOf(part: Part, brickHeight: number)
 	local offset = Vector3.new(
@@ -16,9 +29,14 @@ local function calculatePositionOnTopOf(part: Part, brickHeight: number)
 	return part.Position + offset
 end
 
-local function handleBrickTouched(hit: Part, newBrick: Part)
+local function handleBrickTouched(hit: BasePart, newBrick: Part)
 	local characterFound = hit:FindFirstAncestorOfClass("Model")
-	local playerFound = Players:GetPlayerFromCharacter(characterFound)
+
+	if not characterFound then
+		return
+	end
+
+	local playerFound = Players:GetPlayerFromCharacter(characterFound) :: PlayerWithLeaderstats?
 
 	if not playerFound then
 		return
@@ -49,7 +67,7 @@ local function spawnBrickOnto(part: Part)
 	newBrick.Color = Color3.fromRGB(255, 255, 0)
 	newBrick.Position = calculatePositionOnTopOf(part, newBrick.Size.Y)
 
-	newBrick.Touched:Connect(function(hit: Part)
+	newBrick.Touched:Connect(function(hit: BasePart)
 		handleBrickTouched(hit, newBrick)
 	end)
 
@@ -57,13 +75,12 @@ local function spawnBrickOnto(part: Part)
 end
 
 local function onPlayerAdded(player: Player)
-	local leaderstats = LEADERSTATS_TEMPLATE:Clone()
+	local leaderstats = LEADERSTATS_TEMPLATE:Clone() :: Leaderstats
 	leaderstats.Parent = player
 
 	leaderstats.BricksEaten.Changed:Connect(function(bricksEaten: number)
-		local playerChar = player.Character :: Model
-		local playerTorso: Part = playerChar.Torso
-		playerTorso.Size += Vector3.one
+		local playerChar = player.Character :: PlayerCharacter
+		playerChar.Torso.Size += Vector3.one
 	end)
 end
 
