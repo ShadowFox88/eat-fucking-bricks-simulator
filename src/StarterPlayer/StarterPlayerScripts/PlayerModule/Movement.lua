@@ -1,4 +1,6 @@
 --!strict
+-- TODO: Adjust movement direction based on camera's facing direction
+-- TODO: Adjust orientation based on movement direction
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
