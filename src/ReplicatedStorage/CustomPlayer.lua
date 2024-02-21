@@ -9,7 +9,7 @@ export type Type = Types.CustomPlayer
 export type Character = Types.Character
 
 function CustomPlayer.get(rawPlayer: Player?): Types.CustomPlayer
-	if rawPlayer == nil then
+	if rawPlayer then
 		return rawPlayer :: Types.CustomPlayer
 	end
 
