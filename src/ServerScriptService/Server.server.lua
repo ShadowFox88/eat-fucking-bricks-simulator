@@ -10,6 +10,18 @@ local BASEPLATE = workspace:WaitForChild("Baseplate") :: Part
 local BRICK = ServerStorage.Brick
 local debounces = {}
 
+type Leaderstats = Model & {
+	BricksEaten: IntValue,
+}
+type PlayerWithLeaderstats = Player & {
+	leaderstats: Leaderstats,
+}
+type PlayerCharacter = Model & {
+	Humanoid: Humanoid,
+	Movement: LinearVelocity,
+	Torso: Part,
+}
+
 local function calculatePositionOnTopOf(part: Part, brickHeight: number)
 	local offset = Vector3.new(
 		math.random(-part.Size.X / 2, part.Size.X / 2),
