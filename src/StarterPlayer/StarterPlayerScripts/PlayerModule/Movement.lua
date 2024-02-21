@@ -1,3 +1,4 @@
+--!strict
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 
@@ -13,11 +14,15 @@ export type Directions = {
 	D: UnitVector,
 }
 
-type ActionHandler = (string, Enum.UserInputState, InputObject) -> ()
+type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextActionResult?
 
 local function bindMovementToPlayerCharacter(playerCharacter: Model, directions: Directions, callback: ActionHandler?)
 	if callback == nil then
-		local function handleMovementDefault(action: string, state: Enum.UserInputState, input: InputObject)
+		local function handleMovementDefault(
+			action: string,
+			state: Enum.UserInputState,
+			input: InputObject
+		): Enum.ContextActionResult?
 			if state ~= Enum.UserInputState.Begin and state ~= Enum.UserInputState.End then
 				return
 			end
@@ -41,6 +46,8 @@ local function bindMovementToPlayerCharacter(playerCharacter: Model, directions:
 			else
 				playerMovement.VectorVelocity = rawMovementVelocity.Unit * playerHumanoid.WalkSpeed
 			end
+
+			return nil
 		end
 
 		callback = handleMovementDefault
@@ -48,7 +55,7 @@ local function bindMovementToPlayerCharacter(playerCharacter: Model, directions:
 
 	ContextActionService:BindAction(
 		"Movement",
-		callback,
+		callback :: ActionHandler,
 		false,
 		Enum.KeyCode.W,
 		Enum.KeyCode.A,
