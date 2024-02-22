@@ -8,11 +8,13 @@ local player = CustomPlayer.get()
 local playerCamera = workspace.CurrentCamera
 local Camera = {}
 
+local function trackPlayerCharacter()
+	local origin = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, player.Character.Torso.Size.Y + 2, 5)
+	playerCamera.CFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position)
+end
+
 local function bindCameraToPlayerCharacter()
-	RunService.RenderStepped:Connect(function(delta: number)
-		local origin = player.Character.HumanoidRootPart.CFrame * CFrame.new(0, player.Character.Torso.Size.Y + 2, 5)
-		playerCamera.CFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position)
-	end)
+	RunService.RenderStepped:Connect(trackPlayerCharacter)
 end
 
 function Camera.init()
