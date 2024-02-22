@@ -1,26 +1,26 @@
 --!strict
+-- TODO:
 local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserGameSettings = UserSettings():GetService("UserGameSettings")
 local UserInputService = game:GetService("UserInputService")
 
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 
-local MOUSE_SENSITIVITY = 1 / 10
 local player = CustomPlayer.get()
 local playerCamera = workspace.CurrentCamera
-local accumulatingDelta = Vector2.zero
--- local rotationalOffset = CFrame.identity
+local panDelta = Vector2.zero
 local Camera = {}
 
 local function trackPlayerCharacter()
-	local rotationalOffset = CFrame.fromOrientation(
-		-math.rad(accumulatingDelta.Y * MOUSE_SENSITIVITY),
-		-math.rad(accumulatingDelta.X * MOUSE_SENSITIVITY),
+	local orientation = CFrame.fromOrientation(
+		-math.rad(panDelta.Y * UserGameSettings.MouseSensitivity),
+		-math.rad(panDelta.X * UserGameSettings.MouseSensitivity),
 		0
 	)
 	local positionalOffset = CFrame.new(0, player.Character.Torso.Size.Y + 2, 5)
-	local origin = player.Character.HumanoidRootPart.CFrame * rotationalOffset * positionalOffset
+	local origin = CFrame.new(player.Character.HumanoidRootPart.Position) * orientation * positionalOffset
 	playerCamera.CFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position)
 end
 
@@ -47,7 +47,7 @@ local function pan(action: string, state: Enum.UserInputState, input: InputObjec
 		input.UserInputType == Enum.UserInputType.MouseMovement
 		and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition
 	then
-		accumulatingDelta += UserInputService:GetMouseDelta()
+		panDelta += UserInputService:GetMouseDelta()
 	end
 
 	return Enum.ContextActionResult.Pass
