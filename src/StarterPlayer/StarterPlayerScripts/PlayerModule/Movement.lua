@@ -55,11 +55,7 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 	if callback == nil then
 		local activatedKeys: { string } = {}
 
-		local function handleMovementDefault(
-			action: string,
-			state: Enum.UserInputState,
-			input: InputObject
-		): Enum.ContextActionResult?
+		local function handleMovementDefault(action: string, state: Enum.UserInputState, input: InputObject)
 			if state ~= Enum.UserInputState.Begin and state ~= Enum.UserInputState.End then
 				return
 			end
@@ -88,7 +84,7 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 					* player.Character.Humanoid.WalkSpeed
 			end
 
-			return nil
+			return Enum.ContextActionResult.Pass
 		end
 
 		callback = handleMovementDefault
