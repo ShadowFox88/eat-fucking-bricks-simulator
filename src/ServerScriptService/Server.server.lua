@@ -66,13 +66,7 @@ local function spawnBrickOnto(part: Part)
 	newBrick.Parent = workspace :: any
 end
 
-local function onPlayerAdded(rawPlayer: Player)
-	local player = CustomPlayer.get(rawPlayer)
-
-	Leaderstats.init(player)
-end
-
-Players.PlayerAdded:Connect(onPlayerAdded)
+Players.PlayerAdded:Connect(Leaderstats.init)
 
 while true do
 	spawnBrickOnto(BASEPLATE)
