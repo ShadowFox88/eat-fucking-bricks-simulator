@@ -8,8 +8,9 @@ local RunService = game:GetService("RunService")
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 
 local player = CustomPlayer.get()
-local movementOffset = Vector3.zero
+local rawMovementVelocity = Vector3.zero
 local fallingVelocity = Vector3.zero
+local activatedKeys: { string } = {}
 local Movement = {}
 
 type UnitVector = Vector3
@@ -28,7 +29,6 @@ local function applyGravity(delta: number)
 	parameters.FilterType = Enum.RaycastFilterType.Include
 	parameters.FilterDescendantsInstances = { workspace.Baseplate, workspace.SpawnLocation }
 	parameters.IgnoreWater = true
-	parameters.BruteForceAllSlow = true
 	local collision = workspace:Raycast(playerTorsoUnderside, directlyBelow, parameters)
 
 	if collision then
@@ -54,24 +54,33 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 				return
 			end
 
-			local offsetCallbackFound = directions[input.KeyCode.Name]
+			local keyName = input.KeyCode.Name
+			local calculateOffsetCallbackFound = directions[keyName]
 
-			if not offsetCallbackFound then
-				error(`Invalid direction {offsetCallbackFound} during input {input.KeyCode.Name}`)
+			if not calculateOffsetCallbackFound then
+				error(`Invalid direction {calculateOffsetCallbackFound} during input {keyName}`)
 			end
 
-			local offset = offsetCallbackFound()
+			local offset = calculateOffsetCallbackFound()
 
 			if state == Enum.UserInputState.End then
 				offset = -offset
 			end
 
-			movementOffset += offset
+			rawMovementVelocity += offset
 
-			if movementOffset == Vector3.zero then
-				player.Character.Movement.VectorVelocity = Vector3.zero
+			if state == Enum.UserInputState.Begin then
+				table.insert(activatedKeys, keyName)
 			else
-				player.Character.Movement.VectorVelocity = movementOffset.Unit * player.Character.Humanoid.WalkSpeed
+				table.remove(activatedKeys, table.find(activatedKeys, keyName))
+			end
+
+			if #activatedKeys == 0 then
+				player.Character.Movement.VectorVelocity = Vector3.zero
+				rawMovementVelocity = Vector3.zero
+			else
+				player.Character.Movement.VectorVelocity = rawMovementVelocity.Unit
+					* player.Character.Humanoid.WalkSpeed
 			end
 
 			return nil
