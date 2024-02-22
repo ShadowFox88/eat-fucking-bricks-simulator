@@ -9,7 +9,6 @@ local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 local player = CustomPlayer.get()
 local rawMovementVelocity = Vector3.zero
 local fallingVelocity = Vector3.zero
-local activatedKeys: { string } = {}
 local Movement = {}
 
 type UnitVector = Vector3
@@ -42,8 +41,20 @@ local function applyGravity(delta: number)
 	player.Character.Movement.VectorVelocity -= newFallingOffsetVelocity
 end
 
+local function processInputKeys(keyName: string, state: Enum.UserInputState, cache: { string }): number
+	if state == Enum.UserInputState.Begin then
+		table.insert(cache, keyName)
+	else
+		table.remove(cache, table.find(cache, keyName))
+	end
+
+	return #cache
+end
+
 local function bindMovementToPlayerCharacter(directions: Directions, callback: ActionHandler?)
 	if callback == nil then
+		local activatedKeys: { string } = {}
+
 		local function handleMovementDefault(
 			action: string,
 			state: Enum.UserInputState,
@@ -67,14 +78,9 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 			end
 
 			rawMovementVelocity += offset
+			local activatedKeysCount = processInputKeys(keyName, state, activatedKeys)
 
-			if state == Enum.UserInputState.Begin then
-				table.insert(activatedKeys, keyName)
-			else
-				table.remove(activatedKeys, table.find(activatedKeys, keyName))
-			end
-
-			if #activatedKeys == 0 then
+			if activatedKeysCount == 0 then
 				player.Character.Movement.VectorVelocity = Vector3.zero
 				rawMovementVelocity = Vector3.zero
 			else
