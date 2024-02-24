@@ -84,7 +84,7 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 			local calculateOffsetCallback = directions[keyName]
 
 			if calculateOffsetCallback == nil then
-				error(`Invalid direction {calculateOffsetCallback} during input {keyName}`)
+				error(`Invalid callback {calculateOffsetCallback} from calculating direction for input {keyName}`)
 			end
 
 			local offset = calculateOffsetCallback()
