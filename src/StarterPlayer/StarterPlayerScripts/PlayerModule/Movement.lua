@@ -9,6 +9,7 @@ local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 local player = CustomPlayer.get()
 local rawMovementVelocity = Vector3.zero
 local fallingVelocity = Vector3.zero
+local dynamicMovementConnection: RBXScriptConnection
 local Movement = {}
 
 type UnitVector = Vector3
@@ -53,6 +54,8 @@ local function extractKeyCodesFrom(directions: Directions): { Enum.KeyCode }
 
 	for name, _ in directions do
 		local success, keyCodeFound = pcall(function()
+			-- no better way to bypass the type error of this causing an error,
+			-- even with the pcall present
 			return (Enum.KeyCode :: any)[name]
 		end)
 
