@@ -61,13 +61,13 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 			end
 
 			local keyName = input.KeyCode.Name
-			local calculateOffsetCallbackFound = directions[keyName]
+			local calculateOffsetCallback = directions[keyName]
 
-			if not calculateOffsetCallbackFound then
-				error(`Invalid direction {calculateOffsetCallbackFound} during input {keyName}`)
+			if calculateOffsetCallback == nil then
+				error(`Invalid direction {calculateOffsetCallback} during input {keyName}`)
 			end
 
-			local offset = calculateOffsetCallbackFound()
+			local offset = calculateOffsetCallback()
 
 			if state == Enum.UserInputState.End then
 				offset = -offset
