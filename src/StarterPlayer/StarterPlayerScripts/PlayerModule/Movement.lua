@@ -14,10 +14,7 @@ local Movement = {}
 type UnitVector = Vector3
 type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextActionResult?
 export type Directions = {
-	W: () -> UnitVector,
-	A: () -> UnitVector,
-	S: () -> UnitVector,
-	D: () -> UnitVector,
+	[string]: () -> UnitVector,
 }
 
 local function applyGravity(delta: number)
@@ -49,6 +46,26 @@ local function processInputKeys(keyName: string, state: Enum.UserInputState, cac
 	end
 
 	return #cache
+end
+
+local function extractKeyCodesFrom(directions: Directions): { Enum.KeyCode }
+	local keyCodes = {}
+
+	for name, _ in directions do
+		local success, keyCodeFound = pcall(function()
+			return (Enum.KeyCode :: any)[name]
+		end)
+
+		if not success then
+			local errorMessage = keyCodeFound
+
+			error(errorMessage)
+		end
+
+		table.insert(keyCodes, keyCodeFound)
+	end
+
+	return keyCodes
 end
 
 local function bindMovementToPlayerCharacter(directions: Directions, callback: ActionHandler?)
@@ -90,15 +107,9 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 		callback = handleMovementDefault
 	end
 
-	ContextActionService:BindAction(
-		"Movement",
-		callback :: ActionHandler,
-		false,
-		Enum.KeyCode.W,
-		Enum.KeyCode.A,
-		Enum.KeyCode.S,
-		Enum.KeyCode.D
-	)
+	local keys = extractKeyCodesFrom(directions)
+
+	ContextActionService:BindAction("Movement", callback :: ActionHandler, false, table.unpack(keys))
 	RunService.RenderStepped:Connect(applyGravity)
 end
 
