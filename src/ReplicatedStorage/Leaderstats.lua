@@ -9,21 +9,21 @@ local Leaderstats = {}
 export type Type = Types.Leaderstats
 
 function Leaderstats.find(rawPlayer: Player): Types.Leaderstats?
-	local player = rawPlayer :: Types.CustomPlayer
+    local player = rawPlayer :: Types.CustomPlayer
 
-	return player:FindFirstChild("leaderstats") :: Types.Leaderstats?
+    return player:FindFirstChild("leaderstats") :: Types.Leaderstats?
 end
 
 function Leaderstats.init(rawPlayer: Player)
-	local player = rawPlayer :: Types.CustomPlayer
-	local leaderstats = LEADERSTATS_TEMPLATE:Clone() :: Types.Leaderstats
-	leaderstats.Parent = player
+    local player = rawPlayer :: Types.CustomPlayer
+    local leaderstats = LEADERSTATS_TEMPLATE:Clone() :: Types.Leaderstats
+    leaderstats.Parent = player
 
-	leaderstats.BricksEaten.Changed:Connect(function()
-		player.Character.Torso.Size += Vector3.one
-	end)
+    leaderstats.BricksEaten.Changed:Connect(function()
+        player.Character.Torso.Size += Vector3.one
+    end)
 
-	return leaderstats
+    return leaderstats
 end
 
 return Leaderstats
