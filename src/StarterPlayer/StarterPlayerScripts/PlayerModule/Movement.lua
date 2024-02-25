@@ -117,10 +117,14 @@ function Movement.init(directions: Directions, callback: ActionHandler?)
 
 			state.RawMovementVelocity += offset
 			local activatedKeysCount = processInputKeys(keyName, inputState)
+			local atStandstill = state.RawMovementVelocity == Vector3.zero
 
-			if activatedKeysCount == 0 then
+			if activatedKeysCount == 0 or atStandstill then
 				player.Character.Movement.VectorVelocity = Vector3.zero
-				state.RawMovementVelocity = Vector3.zero
+
+				if not atStandstill then
+					state.RawMovementVelocity = Vector3.zero
+				end
 			else
 				player.Character.Movement.VectorVelocity = state.RawMovementVelocity.Unit
 					* player.Character.Humanoid.WalkSpeed
