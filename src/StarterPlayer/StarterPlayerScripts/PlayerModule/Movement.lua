@@ -7,9 +7,6 @@ local RunService = game:GetService("RunService")
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 
 local player = CustomPlayer.get()
-local rawMovementVelocity = Vector3.zero
-local fallingVelocity = Vector3.zero
-local dynamicMovementConnection: RBXScriptConnection
 local Movement = {}
 
 type UnitVector = Vector3
@@ -17,8 +14,18 @@ type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextA
 export type Directions = {
 	[string]: () -> UnitVector,
 }
+type State = {
+	ActivatedKeys: { string },
+	FallingVelocity: Vector3,
+	RawMovementVelocity: Vector3,
+}
+type Context = {
+	Callback: ActionHandler,
+	DirectionCallbacks: Directions,
+	State: State,
+}
 
-local function applyGravity(delta: number)
+local function applyGravity(context: Context, delta: number)
 	local playerTorsoUnderside = player.Character.Torso.Position - Vector3.new(0, player.Character.Torso.Size.Y / 2)
 	local directlyBelow = Vector3.new(0, -1 / 10, 0)
 	local parameters = RaycastParams.new()
@@ -28,25 +35,15 @@ local function applyGravity(delta: number)
 	local collision = workspace:Raycast(playerTorsoUnderside, directlyBelow, parameters)
 
 	if collision then
-		player.Character.Movement.VectorVelocity += fallingVelocity
-		fallingVelocity = Vector3.zero
+		player.Character.Movement.VectorVelocity += context.State.FallingVelocity
+		context.State.FallingVelocity = Vector3.zero
 
 		return
 	end
 
 	local newFallingOffsetVelocity = Vector3.new(0, delta * workspace.Gravity, 0)
-	fallingVelocity -= newFallingOffsetVelocity
+	context.State.FallingVelocity -= newFallingOffsetVelocity
 	player.Character.Movement.VectorVelocity -= newFallingOffsetVelocity
-end
-
-local function processInputKeys(keyName: string, state: Enum.UserInputState, cache: { string }): number
-	if state == Enum.UserInputState.Begin then
-		table.insert(cache, keyName)
-	else
-		table.remove(cache, table.find(cache, keyName))
-	end
-
-	return #cache
 end
 
 local function extractKeyCodesFrom(directions: Directions): { Enum.KeyCode }
@@ -71,12 +68,37 @@ local function extractKeyCodesFrom(directions: Directions): { Enum.KeyCode }
 	return keyCodes
 end
 
-local function bindMovementToPlayerCharacter(directions: Directions, callback: ActionHandler?)
-	if callback == nil then
-		local activatedKeys: { string } = {}
+local function bindMovementToPlayerCharacter(context: Context)
+	local keys = extractKeyCodesFrom(context.DirectionCallbacks)
 
-		local function handleMovementDefault(action: string, state: Enum.UserInputState, input: InputObject)
-			if state ~= Enum.UserInputState.Begin and state ~= Enum.UserInputState.End then
+	ContextActionService:BindAction("Movement", context.Callback, false, table.unpack(keys))
+	RunService.RenderStepped:Connect(function(delta: number)
+		applyGravity(context, delta)
+	end)
+end
+
+function Movement.init(directions: Directions, callback: ActionHandler?)
+	local state: State = {
+		ActivatedKeys = {},
+		FallingVelocity = Vector3.zero,
+		RawMovementVelocity = Vector3.zero,
+	}
+
+	if callback == nil then
+		local function processInputKeys(keyName: string, inputState: Enum.UserInputState): number
+			if inputState == Enum.UserInputState.Begin then
+				table.insert(state.ActivatedKeys, keyName)
+			else
+				local keyAtIndex = table.find(state.ActivatedKeys, keyName)
+
+				table.remove(state.ActivatedKeys, keyAtIndex)
+			end
+
+			return #state.ActivatedKeys
+		end
+
+		local function handleMovementDefault(action: string, inputState: Enum.UserInputState, input: InputObject)
+			if inputState ~= Enum.UserInputState.Begin and inputState ~= Enum.UserInputState.End then
 				return
 			end
 
@@ -89,18 +111,18 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 
 			local offset = calculateOffsetCallback()
 
-			if state == Enum.UserInputState.End then
+			if inputState == Enum.UserInputState.End then
 				offset = -offset
 			end
 
-			rawMovementVelocity += offset
-			local activatedKeysCount = processInputKeys(keyName, state, activatedKeys)
+			state.RawMovementVelocity += offset
+			local activatedKeysCount = processInputKeys(keyName, inputState)
 
 			if activatedKeysCount == 0 then
 				player.Character.Movement.VectorVelocity = Vector3.zero
-				rawMovementVelocity = Vector3.zero
+				state.RawMovementVelocity = Vector3.zero
 			else
-				player.Character.Movement.VectorVelocity = rawMovementVelocity.Unit
+				player.Character.Movement.VectorVelocity = state.RawMovementVelocity.Unit
 					* player.Character.Humanoid.WalkSpeed
 			end
 
@@ -110,19 +132,18 @@ local function bindMovementToPlayerCharacter(directions: Directions, callback: A
 		callback = handleMovementDefault
 	end
 
-	local keys = extractKeyCodesFrom(directions)
+	local context: Context = {
+		Callback = callback :: ActionHandler,
+		DirectionCallbacks = directions,
+		State = state,
+	}
 
-	ContextActionService:BindAction("Movement", callback :: ActionHandler, false, table.unpack(keys))
-	RunService.RenderStepped:Connect(applyGravity)
-end
-
-function Movement.init(directions: Directions, callback: ActionHandler?)
 	if player.Character then
-		bindMovementToPlayerCharacter(directions, callback)
+		bindMovementToPlayerCharacter(context)
 	end
 
 	player.CharacterAdded:Connect(function()
-		bindMovementToPlayerCharacter(directions, callback)
+		bindMovementToPlayerCharacter(context)
 	end)
 end
 
