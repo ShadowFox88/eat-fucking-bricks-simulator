@@ -37,8 +37,6 @@ local function applyGravity(context: Context, delta: number)
     })
     local collision = workspace:Raycast(playerTorsoUnderside, directlyBelow, parameters)
 
-    print(collision)
-
     if collision then
         context.FallingVelocity = Vector3.zero
 
@@ -98,13 +96,11 @@ local function processMovement(context: Context, delta: number)
     end
 
     if context.FallingVelocity ~= Vector3.zero then
-        print("Falling", movementVelocity - context.FallingVelocity * delta)
         player.Character.Movement.VectorVelocity = movementVelocity - context.FallingVelocity
 
         return
     end
 
-    print("Moving", movementVelocity)
     player.Character.Movement.VectorVelocity = movementVelocity
 end
 
