@@ -27,6 +27,7 @@ type Context = {
     OffsetCallbacks: { OffsetGenerator },
 }
 
+-- TODO: Combine into 1 stepped event handler
 local function applyGravity(context: Context, delta: number)
     local playerTorsoUnderside = player.Character.Torso.Position - Vector3.new(0, player.Character.Torso.Size.Y / 2)
     local directlyBelow = Vector3.new(0, -1 / 10, 0)
@@ -50,13 +51,13 @@ local function extractKeyCodesFrom(directions: DirectionCallbacks): { Enum.KeyCo
     local keyCodes = {}
 
     for name, _ in directions do
-        local success, keyCodeFound = pcall(function()
+        local success, keyCodeFound: Enum.KeyCode | string = pcall(function()
             -- even with the pcall present, dynamically accessing this enum
             -- causes a type error, so we have to cast to any - blame my lsp
             return (Enum.KeyCode :: any)[name]
         end)
 
-        if not success then
+        if not success and typeof(keyCodeFound) == "string" then
             local errorMessage = keyCodeFound
 
             error(errorMessage)
