@@ -69,8 +69,21 @@ local function extractKeyCodesFrom(directions: DirectionCallbacks): { Enum.KeyCo
     return keyCodes
 end
 
+local function adjustOrientation(context: Context)
+    local isMoving = context.MovementVelocity ~= Vector3.zero
+
+    if (isMoving and not player.Character.Turning.Enabled) or (not isMoving and player.Character.Turning.Enabled) then
+        player.Character.Turning.Enabled = isMoving
+    end
+
+    player.Character.Turning.CFrame = CFrame.new(
+        player.Character.HumanoidRootPart.Position,
+        player.Character.HumanoidRootPart.Position + context.MovementVelocity
+    )
+end
+
 local function processMovement(context: Context, delta: number)
-    local movementVelocity = Vector3.zero
+    local newMovementVelocity = Vector3.zero
 
     for _, key in context.ActivatedKeys do
         local calculateOffsetCallback = context.DirectionCallbacks[key]
@@ -80,29 +93,30 @@ local function processMovement(context: Context, delta: number)
         end
 
         local offset = calculateOffsetCallback()
-        movementVelocity += offset
+        newMovementVelocity += offset
     end
 
     local activatedKeysCount = #context.ActivatedKeys
-    local atStandstill = movementVelocity == Vector3.zero
+    local atStandstill = newMovementVelocity == Vector3.zero
 
     if activatedKeysCount == 0 or atStandstill then
-        movementVelocity = Vector3.zero
+        newMovementVelocity = Vector3.zero
 
         if not atStandstill then
-            movementVelocity = Vector3.zero
+            newMovementVelocity = Vector3.zero
         end
     else
-        movementVelocity = movementVelocity.Unit * player.Character.Humanoid.WalkSpeed
+        newMovementVelocity = newMovementVelocity.Unit * player.Character.Humanoid.WalkSpeed
     end
 
     if context.FallingVelocity ~= Vector3.zero then
-        player.Character.Movement.VectorVelocity = movementVelocity - context.FallingVelocity
+        player.Character.Movement.VectorVelocity = newMovementVelocity - context.FallingVelocity
 
         return
     end
 
-    player.Character.Movement.VectorVelocity = movementVelocity
+    context.MovementVelocity = newMovementVelocity
+    player.Character.Movement.VectorVelocity = newMovementVelocity
 end
 
 local function bindMovementToPlayerCharacter(context: Context)
@@ -114,6 +128,9 @@ local function bindMovementToPlayerCharacter(context: Context)
     end)
     RunService.Stepped:Connect(function(_, delta: number)
         processMovement(context, delta)
+    end)
+    RunService.Stepped:Connect(function()
+        adjustOrientation(context)
     end)
 end
 
