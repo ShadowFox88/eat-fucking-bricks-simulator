@@ -27,7 +27,6 @@ type Context = {
     OffsetCallbacks: { OffsetGenerator },
 }
 
--- TODO: Combine into 1 stepped event handler
 local function applyGravity(context: Context, delta: number)
     local playerTorsoUnderside = player.Character.Torso.Position - Vector3.new(0, player.Character.Torso.Size.Y / 2)
     local directlyBelow = Vector3.new(0, -1 / 10, 0)
@@ -123,13 +122,9 @@ local function bindMovementToPlayerCharacter(context: Context)
     local keys = extractKeyCodesFrom(context.DirectionCallbacks)
 
     ContextActionService:BindAction("Movement", context.Callback, false, table.unpack(keys))
-    RunService.RenderStepped:Connect(function(delta: number)
-        applyGravity(context, delta)
-    end)
     RunService.Stepped:Connect(function(_, delta: number)
+        applyGravity(context, delta)
         processMovement(context, delta)
-    end)
-    RunService.Stepped:Connect(function()
         adjustOrientation(context)
     end)
 end
