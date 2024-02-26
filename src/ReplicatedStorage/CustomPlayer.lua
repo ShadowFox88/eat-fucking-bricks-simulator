@@ -9,11 +9,12 @@ export type Type = Types.CustomPlayer
 export type Character = Types.Character
 
 function CustomPlayer.get(rawPlayer: Player?): Types.CustomPlayer
-	if rawPlayer then
-		return rawPlayer :: Types.CustomPlayer
-	end
+    local player = (rawPlayer or Players.LocalPlayer) :: Types.CustomPlayer
+    local playerCharacter = (player.Character or player.CharacterAdded:Wait()) :: Character
 
-	return Players.LocalPlayer :: Types.CustomPlayer
+    playerCharacter:WaitForChild("HumanoidRootPart")
+
+    return player
 end
 
 return CustomPlayer
