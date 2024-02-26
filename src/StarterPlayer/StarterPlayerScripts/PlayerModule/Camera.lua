@@ -41,7 +41,7 @@ local function bindCameraToPlayerCharacter(context: Context)
             and state ~= Enum.UserInputState.Change
             and state ~= Enum.UserInputState.End
         then
-            return
+            return Enum.ContextActionResult.Pass
         end
 
         if input.UserInputType == Enum.UserInputType.MouseButton2 then
