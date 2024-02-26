@@ -5,26 +5,25 @@ local RunService = game:GetService("RunService")
 
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 local CustomRaycastParams = require(ReplicatedStorage.CustomRaycastParams)
+local Types = require(ReplicatedStorage.Utils.Types)
 
 local player = CustomPlayer.get()
 local Movement = {}
 
 type UnitVector = Vector3
-type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextActionResult?
+type ActionHandler = (string, Enum.UserInputState, InputObject) -> Enum.ContextActionResult
 type OffsetGeneratorProperties = {
     Negate: boolean,
 }
 type OffsetGenerator = (OffsetGeneratorProperties?) -> UnitVector
-export type DirectionCallbacks = {
-    [string]: OffsetGenerator,
-}
+export type DirectionCallbacks = Types.Record<string, OffsetGenerator>
 type Context = {
-    ActivatedKeys: { string },
+    ActivatedKeys: Types.Array<string>,
     Callback: ActionHandler,
     DirectionCallbacks: DirectionCallbacks,
     FallingVelocity: Vector3,
     MovementVelocity: Vector3,
-    OffsetCallbacks: { OffsetGenerator },
+    OffsetCallbacks: Types.Array<OffsetGenerator>,
 }
 
 local function applyGravity(context: Context, delta: number)
@@ -46,7 +45,7 @@ local function applyGravity(context: Context, delta: number)
     context.FallingVelocity += Vector3.new(0, workspace.Gravity * delta, 0)
 end
 
-local function extractKeyCodesFrom(directions: DirectionCallbacks): { Enum.KeyCode }
+local function extractKeyCodesFrom(directions: DirectionCallbacks): Types.Array<Enum.KeyCode>
     local keyCodes = {}
 
     for name, _ in directions do
@@ -130,7 +129,7 @@ local function bindMovementToPlayerCharacter(context: Context)
 end
 
 function Movement.init(directions: DirectionCallbacks, callback: ActionHandler?)
-    local activatedKeys: { string } = {}
+    local activatedKeys: Types.Array<string> = {}
     local movementVelocity = Vector3.zero
 
     if callback == nil then

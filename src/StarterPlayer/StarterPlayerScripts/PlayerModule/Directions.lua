@@ -1,8 +1,11 @@
 --!strict
 -- TODO: Simplify
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Utils = require(ReplicatedStorage.Utils)
+
 local playerCamera = workspace.CurrentCamera
 
-type AnyTable = { [any]: any }
 type CreateCameraOffsetCallbackProperties = {
     Negate: boolean,
 }
@@ -10,30 +13,19 @@ type CameraOffsetCallbackProperties = {
     Negate: boolean?,
 }
 
--- TODO: Incorporate into utils
-local function fillDefaults<From, T>(properties: From & AnyTable, defaults: T & AnyTable): T | AnyTable
-    local filled = {}
-
-    for key, value in defaults :: AnyTable do
-        local propertyFound = (properties :: AnyTable)[key]
-        filled[key] = if propertyFound ~= nil then propertyFound else value
-    end
-
-    return filled
-end
-
 local function createCameraOffsetCallback(
     vectorName: "LookVector" | "RightVector",
     properties: CreateCameraOffsetCallbackProperties?
 )
-    local castedProperties: CreateCameraOffsetCallbackProperties = fillDefaults(properties or {}, {
+    local castedProperties: CreateCameraOffsetCallbackProperties = Utils.Table.defaults(properties or {}, {
         Negate = false,
     })
 
     return function(predicateProperties: CameraOffsetCallbackProperties?)
-        local castedPredicateProperties: CameraOffsetCallbackProperties = fillDefaults(predicateProperties or {}, {
-            Negate = false,
-        })
+        local castedPredicateProperties: CameraOffsetCallbackProperties =
+            Utils.Table.defaults(predicateProperties or {}, {
+                Negate = false,
+            })
 
         local success, vector: Vector3 | string = pcall(function()
             return (playerCamera.CFrame :: any)[vectorName]

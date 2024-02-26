@@ -1,29 +1,22 @@
 --!strict
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Types = require(ReplicatedStorage.Utils.Types)
+local Utils = require(ReplicatedStorage.Utils)
+
 local CustomRaycastParams = {}
 
 type Properties = {
     BruteForceAllSlow: boolean?,
     CollisionGroup: string?,
-    FilterDescendantsInstances: { BasePart },
+    FilterDescendantsInstances: Types.Array<BasePart>,
     FilterType: Enum.RaycastFilterType?,
     IgnoreWater: boolean?,
     RespectCanCollide: boolean?,
 }
-type AnyTable = { [any]: any }
-
-local function fillDefaults<From, T>(properties: From & AnyTable, defaults: T & AnyTable): T | AnyTable
-    local filled = {}
-
-    for key, value in defaults :: AnyTable do
-        local propertyFound = (properties :: AnyTable)[key]
-        filled[key] = if propertyFound ~= nil then propertyFound else value
-    end
-
-    return filled
-end
 
 function CustomRaycastParams.new(properties: Properties?)
-    local castedProperties: Properties = fillDefaults(properties or {}, {
+    local castedProperties: Properties = Utils.Table.defaults(properties or {}, {
         BruteForceAllSlow = false,
         CollisionGroup = "Default",
         FilterDescendantsInstances = {},
@@ -35,7 +28,7 @@ function CustomRaycastParams.new(properties: Properties?)
 
     -- need to typecast in order to iterate over, sacrificing typesafety for one
     -- less type error
-    for property, value in castedProperties :: AnyTable do
+    for property, value in castedProperties :: Types.Table do
         (raycastParams :: any)[property] = value
     end
 
