@@ -9,13 +9,16 @@ local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 
 local player = CustomPlayer.get()
 local playerCamera = workspace.CurrentCamera
-local panDelta = Vector2.zero
 local Camera = {}
 
-local function trackPlayerCharacter()
+type Context = {
+    PanDelta: Vector2,
+}
+
+local function trackPlayerCharacter(context: Context)
     local orientation = CFrame.fromOrientation(
-        -math.rad(panDelta.Y * UserGameSettings.MouseSensitivity),
-        -math.rad(panDelta.X * UserGameSettings.MouseSensitivity),
+        -math.rad(context.PanDelta.Y * UserGameSettings.MouseSensitivity),
+        -math.rad(context.PanDelta.X * UserGameSettings.MouseSensitivity),
         0
     )
     local positionalOffset = CFrame.new(0, player.Character.Torso.Size.Y + 2, 5)
@@ -31,29 +34,31 @@ local function togglePanning(state: Enum.UserInputState)
     end
 end
 
-local function pan(action: string, state: Enum.UserInputState, input: InputObject)
-    if
-        state ~= Enum.UserInputState.Begin
-        and state ~= Enum.UserInputState.Change
-        and state ~= Enum.UserInputState.End
-    then
-        return
+local function bindCameraToPlayerCharacter(context: Context)
+    local function pan(action: string, state: Enum.UserInputState, input: InputObject)
+        if
+            state ~= Enum.UserInputState.Begin
+            and state ~= Enum.UserInputState.Change
+            and state ~= Enum.UserInputState.End
+        then
+            return
+        end
+
+        if input.UserInputType == Enum.UserInputType.MouseButton2 then
+            togglePanning(state)
+        elseif
+            input.UserInputType == Enum.UserInputType.MouseMovement
+            and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition
+        then
+            context.PanDelta += UserInputService:GetMouseDelta()
+        end
+
+        return Enum.ContextActionResult.Pass
     end
 
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then
-        togglePanning(state)
-    elseif
-        input.UserInputType == Enum.UserInputType.MouseMovement
-        and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition
-    then
-        panDelta += UserInputService:GetMouseDelta()
-    end
-
-    return Enum.ContextActionResult.Pass
-end
-
-local function bindCameraToPlayerCharacter()
-    RunService.RenderStepped:Connect(trackPlayerCharacter)
+    RunService.RenderStepped:Connect(function()
+        trackPlayerCharacter(context)
+    end)
     ContextActionService:BindAction(
         "pan",
         pan,
@@ -64,11 +69,17 @@ local function bindCameraToPlayerCharacter()
 end
 
 function Camera.init()
+    local context: Context = {
+        PanDelta = Vector2.zero,
+    }
+
     if player.Character then
-        bindCameraToPlayerCharacter()
+        bindCameraToPlayerCharacter(context)
     end
 
-    player.CharacterAdded:Connect(bindCameraToPlayerCharacter)
+    player.CharacterAdded:Connect(function()
+        bindCameraToPlayerCharacter(context)
+    end)
 end
 
 return Camera
