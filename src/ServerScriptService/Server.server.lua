@@ -8,7 +8,7 @@ local Leaderstats = require(ReplicatedStorage.Leaderstats)
 
 local BASEPLATE = workspace:WaitForChild("Baseplate") :: Part
 local BRICK = ServerStorage.Brick
-local debounces = {}
+local touchCountTracker = {}
 
 local function calculatePositionOnTopOf(part: Part, brickHeight: number)
     local offset = Vector3.new(
@@ -33,24 +33,23 @@ local function handleBrickTouched(hit: BasePart, newBrick: Part)
         return
     end
 
-    local debounceFound = debounces[playerFound]
+    local touchCountFound = touchCountTracker[playerFound]
 
-    if not debounceFound then
-        debounceFound = 1
-        debounces[playerFound] = 1
+    if not touchCountFound then
+        touchCountFound = 1
+        touchCountTracker[playerFound] = 1
     else
-        debounceFound += 1
-        debounces[playerFound] += 1
+        touchCountTracker[playerFound] += 1
     end
 
-    if debounceFound > 1 then
+    if touchCountFound > 1 then
         return
     end
 
     playerFound.leaderstats.BricksEaten.Value += 1
     newBrick:Destroy()
 
-    debounces[playerFound] = 0
+    touchCountTracker[playerFound] = 0
 end
 
 local function spawnBrickOnto(part: Part)
