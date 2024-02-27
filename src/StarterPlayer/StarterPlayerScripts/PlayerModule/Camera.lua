@@ -13,6 +13,7 @@ local Camera = {}
 
 type Context = {
     PanDelta: Vector2,
+    ZoomFactor: number,
 }
 
 local function trackPlayerCharacter(context: Context)
@@ -22,8 +23,9 @@ local function trackPlayerCharacter(context: Context)
         0
     )
     local positionalOffset = CFrame.new(0, player.Character.Torso.Size.Y + 2, 5)
+    local zoomOffset = CFrame.new(0, 0, context.ZoomFactor)
     local origin = CFrame.new(player.Character.HumanoidRootPart.Position) * orientation * positionalOffset
-    playerCamera.CFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position)
+    playerCamera.CFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position) * zoomOffset
 end
 
 local function togglePanning(state: Enum.UserInputState)
@@ -57,6 +59,17 @@ local function bindCameraToPlayerCharacter(context: Context)
         return Enum.ContextActionResult.Pass
     end
 
+    local function zoom(action: string, state: Enum.UserInputState, input: InputObject)
+        if state ~= Enum.UserInputState.Change then
+            return Enum.ContextActionResult.Pass
+        end
+
+        local scrollingUp = input.Position.Z == 1
+        context.ZoomFactor -= if scrollingUp then 1 else -1
+
+        return Enum.ContextActionResult.Pass
+    end
+
     RunService.RenderStepped:Connect(function()
         trackPlayerCharacter(context)
     end)
@@ -67,11 +80,13 @@ local function bindCameraToPlayerCharacter(context: Context)
         Enum.UserInputType.MouseButton2,
         Enum.UserInputType.MouseMovement
     )
+    ContextActionService:BindAction("zoom", zoom, false, Enum.UserInputType.MouseWheel)
 end
 
 function Camera.init()
     local context: Context = {
         PanDelta = Vector2.zero,
+        ZoomFactor = 5,
     }
 
     if player.Character then
