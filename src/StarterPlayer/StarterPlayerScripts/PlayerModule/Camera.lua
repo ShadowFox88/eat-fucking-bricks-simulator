@@ -8,6 +8,8 @@ local UserInputService = game:GetService("UserInputService")
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 local CustomRaycastParams = require(ReplicatedStorage.CustomRaycastParams)
 
+local ZOOM_IN_FACTOR = 1
+local ZOOM_OUT_FACTOR = -1
 local player = CustomPlayer.get()
 local playerCamera = workspace.CurrentCamera
 local Camera = {}
@@ -84,7 +86,10 @@ local function bindCameraToPlayerCharacter(context: Context)
             input.UserInputType == Enum.UserInputType.MouseMovement
             and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition
         then
-            context.PanDelta += UserInputService:GetMouseDelta()
+            local mouseDelta = UserInputService:GetMouseDelta()
+            context.PanDelta =
+                Vector2.new(context.PanDelta.X + mouseDelta.X, math.clamp(context.PanDelta.Y + mouseDelta.Y, -110, 45))
+            print(context.PanDelta)
         end
 
         return Enum.ContextActionResult.Pass
@@ -95,8 +100,6 @@ local function bindCameraToPlayerCharacter(context: Context)
             return Enum.ContextActionResult.Pass
         end
 
-        local ZOOM_IN_FACTOR = 1
-        local ZOOM_OUT_FACTOR = -1
         local scrollingUp = input.Position.Z == 1
 
         if scrollingUp and not context.InFirstPerson then
