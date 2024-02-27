@@ -34,6 +34,7 @@ local function togglePanning(state: Enum.UserInputState)
     end
 end
 
+-- TODO: See if possible to move callback elsewhere and still transfer context
 local function bindCameraToPlayerCharacter(context: Context)
     local function pan(action: string, state: Enum.UserInputState, input: InputObject)
         if
