@@ -6,15 +6,28 @@ local UserGameSettings = UserSettings():GetService("UserGameSettings")
 local UserInputService = game:GetService("UserInputService")
 
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
+local CustomRaycastParams = require(ReplicatedStorage.CustomRaycastParams)
 
 local player = CustomPlayer.get()
 local playerCamera = workspace.CurrentCamera
 local Camera = {}
 
 type Context = {
+    InFirstPerson: boolean,
     PanDelta: Vector2,
     ZoomFactor: number,
 }
+
+local function getInstanceAheadOf(cameraCFrame: CFrame): Instance?
+    local parameters = CustomRaycastParams.new({
+        FilterDescendantsInstances = { player.Character.Torso },
+        FilterType = Enum.RaycastFilterType.Include,
+        IgnoreWater = true,
+    })
+    local collision = workspace:Raycast(cameraCFrame.Position, cameraCFrame.LookVector, parameters)
+
+    return if collision then collision.Instance else nil
+end
 
 local function trackPlayerCharacter(context: Context)
     local orientation = CFrame.fromOrientation(
@@ -25,7 +38,25 @@ local function trackPlayerCharacter(context: Context)
     local positionalOffset = CFrame.new(0, player.Character.Torso.Size.Y + 2, 5)
     local zoomOffset = CFrame.new(0, 0, context.ZoomFactor)
     local origin = CFrame.new(player.Character.HumanoidRootPart.Position) * orientation * positionalOffset
-    playerCamera.CFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position) * zoomOffset
+    local newCameraCFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position) * zoomOffset
+    local instanceAhead = getInstanceAheadOf(newCameraCFrame)
+    local studsFromCharacter =
+        math.round((playerCamera.CFrame.Position - player.Character.HumanoidRootPart.Position).Magnitude)
+    local inFirstPerson = studsFromCharacter == 0
+
+    if instanceAhead and instanceAhead:IsDescendantOf(player.Character) then
+        local insideCharacterCFrame = CFrame.new(
+            player.Character.HumanoidRootPart.Position,
+            player.Character.HumanoidRootPart.Position + player.Character.HumanoidRootPart.CFrame.LookVector
+        )
+        newCameraCFrame = insideCharacterCFrame
+    end
+
+    playerCamera.CFrame = newCameraCFrame
+
+    if inFirstPerson ~= context.InFirstPerson then
+        context.InFirstPerson = inFirstPerson
+    end
 end
 
 local function togglePanning(state: Enum.UserInputState)
@@ -64,8 +95,15 @@ local function bindCameraToPlayerCharacter(context: Context)
             return Enum.ContextActionResult.Pass
         end
 
+        local ZOOM_IN_FACTOR = 1
+        local ZOOM_OUT_FACTOR = -1
         local scrollingUp = input.Position.Z == 1
-        context.ZoomFactor -= if scrollingUp then 1 else -1
+
+        if scrollingUp and not context.InFirstPerson then
+            context.ZoomFactor -= ZOOM_IN_FACTOR
+        elseif not scrollingUp then
+            context.ZoomFactor -= ZOOM_OUT_FACTOR
+        end
 
         return Enum.ContextActionResult.Pass
     end
@@ -85,6 +123,7 @@ end
 
 function Camera.init()
     local context: Context = {
+        InFirstPerson = false,
         PanDelta = Vector2.zero,
         ZoomFactor = 5,
     }
