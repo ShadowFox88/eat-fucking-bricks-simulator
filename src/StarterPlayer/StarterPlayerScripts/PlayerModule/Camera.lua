@@ -40,8 +40,8 @@ local function trackPlayerCharacter(context: Context)
     local origin = CFrame.new(player.Character.HumanoidRootPart.Position) * orientation * positionalOffset
     local newCameraCFrame = CFrame.new(origin.Position, player.Character.HumanoidRootPart.Position) * zoomOffset
     local instanceAhead = getInstanceAheadOf(newCameraCFrame)
-    local studsFromCharacter =
-        math.round((playerCamera.CFrame.Position - player.Character.HumanoidRootPart.Position).Magnitude)
+    local cameraToCharacterDirection = playerCamera.CFrame.Position - player.Character.HumanoidRootPart.Position
+    local studsFromCharacter = math.round(cameraToCharacterDirection.Magnitude)
     local inFirstPerson = studsFromCharacter == 0
 
     if instanceAhead and instanceAhead:IsDescendantOf(player.Character) then
