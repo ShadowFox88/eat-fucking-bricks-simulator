@@ -7,18 +7,13 @@ local UserInputService = game:GetService("UserInputService")
 
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 local CustomRaycastParams = require(ReplicatedStorage.CustomRaycastParams)
+local SharedState = require(script.Parent.SharedState)
 
 local ZOOM_IN_FACTOR = 1
 local ZOOM_OUT_FACTOR = -1
 local player = CustomPlayer.get()
 local playerCamera = workspace.CurrentCamera
 local Camera = {}
-
-type Context = {
-    InFirstPerson: boolean,
-    PanDelta: Vector2,
-    ZoomFactor: number,
-}
 
 local function getInstanceAheadOf(cameraCFrame: CFrame): Instance?
     local parameters = CustomRaycastParams.new({
@@ -31,7 +26,7 @@ local function getInstanceAheadOf(cameraCFrame: CFrame): Instance?
     return if collision then collision.Instance else nil
 end
 
-local function trackPlayerCharacter(context: Context)
+local function trackPlayerCharacter(context: SharedState.CameraContext)
     local orientation = CFrame.fromOrientation(
         -math.rad(context.PanDelta.Y * UserGameSettings.MouseSensitivity),
         -math.rad(context.PanDelta.X * UserGameSettings.MouseSensitivity),
@@ -69,48 +64,49 @@ local function togglePanning(state: Enum.UserInputState)
     end
 end
 
--- TODO: See if possible to move callback elsewhere and still transfer context
-local function bindCameraToPlayerCharacter(context: Context)
-    local function pan(action: string, state: Enum.UserInputState, input: InputObject)
-        if
-            state ~= Enum.UserInputState.Begin
-            and state ~= Enum.UserInputState.Change
-            and state ~= Enum.UserInputState.End
-        then
-            return Enum.ContextActionResult.Pass
-        end
-
-        if input.UserInputType == Enum.UserInputType.MouseButton2 then
-            togglePanning(state)
-        elseif
-            input.UserInputType == Enum.UserInputType.MouseMovement
-            and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition
-        then
-            local mouseDelta = UserInputService:GetMouseDelta()
-            context.PanDelta =
-                Vector2.new(context.PanDelta.X + mouseDelta.X, math.clamp(context.PanDelta.Y + mouseDelta.Y, -110, 45))
-            print(context.PanDelta)
-        end
-
+local function pan(action: string, state: Enum.UserInputState, input: InputObject)
+    if
+        state ~= Enum.UserInputState.Begin
+        and state ~= Enum.UserInputState.Change
+        and state ~= Enum.UserInputState.End
+    then
         return Enum.ContextActionResult.Pass
     end
 
-    local function zoom(action: string, state: Enum.UserInputState, input: InputObject)
-        if state ~= Enum.UserInputState.Change then
-            return Enum.ContextActionResult.Pass
-        end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 then
+        togglePanning(state)
+    elseif
+        input.UserInputType == Enum.UserInputType.MouseMovement
+        and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCurrentPosition
+    then
+        local mouseDelta = UserInputService:GetMouseDelta()
+        SharedState.CameraContext.PanDelta = Vector2.new(
+            SharedState.CameraContext.PanDelta.X + mouseDelta.X,
+            math.clamp(SharedState.CameraContext.PanDelta.Y + mouseDelta.Y, -110, 45)
+        )
+        print(SharedState.CameraContext.PanDelta)
+    end
 
-        local scrollingUp = input.Position.Z == 1
+    return Enum.ContextActionResult.Pass
+end
 
-        if scrollingUp and not context.InFirstPerson then
-            context.ZoomFactor -= ZOOM_IN_FACTOR
-        elseif not scrollingUp then
-            context.ZoomFactor -= ZOOM_OUT_FACTOR
-        end
-
+local function zoom(action: string, state: Enum.UserInputState, input: InputObject)
+    if state ~= Enum.UserInputState.Change then
         return Enum.ContextActionResult.Pass
     end
 
+    local scrollingUp = input.Position.Z == 1
+
+    if scrollingUp and not SharedState.CameraContext.InFirstPerson then
+        SharedState.CameraContext.ZoomFactor -= ZOOM_IN_FACTOR
+    elseif not scrollingUp then
+        SharedState.CameraContext.ZoomFactor -= ZOOM_OUT_FACTOR
+    end
+
+    return Enum.ContextActionResult.Pass
+end
+
+local function bindCameraToPlayerCharacter(context: SharedState.CameraContext)
     RunService.RenderStepped:Connect(function()
         trackPlayerCharacter(context)
     end)
@@ -125,18 +121,12 @@ local function bindCameraToPlayerCharacter(context: Context)
 end
 
 function Camera.init()
-    local context: Context = {
-        InFirstPerson = false,
-        PanDelta = Vector2.zero,
-        ZoomFactor = 5,
-    }
-
     if player.Character then
-        bindCameraToPlayerCharacter(context)
+        bindCameraToPlayerCharacter(SharedState.CameraContext)
     end
 
     player.CharacterAdded:Connect(function()
-        bindCameraToPlayerCharacter(context)
+        bindCameraToPlayerCharacter(SharedState.CameraContext)
     end)
 end
 
