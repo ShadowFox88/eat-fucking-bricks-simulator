@@ -84,7 +84,6 @@ local function pan(action: string, state: Enum.UserInputState, input: InputObjec
             SharedState.CameraContext.PanDelta.X + mouseDelta.X,
             math.clamp(SharedState.CameraContext.PanDelta.Y + mouseDelta.Y, -110, 45)
         )
-        print(SharedState.CameraContext.PanDelta)
     end
 
     return Enum.ContextActionResult.Pass
