@@ -3,6 +3,7 @@ local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Context = require(ReplicatedStorage.Utils.Context)
 local CustomPlayer = require(ReplicatedStorage.CustomPlayer)
 local CustomRaycastParams = require(ReplicatedStorage.CustomRaycastParams)
 local Types = require(ReplicatedStorage.Utils.Types)
@@ -17,7 +18,7 @@ type OffsetGeneratorProperties = {
 }
 type OffsetGenerator = (OffsetGeneratorProperties?) -> UnitVector
 export type DirectionCallbacks = Types.Record<string, OffsetGenerator>
-type Context = {
+type ContextDefaults = {
     ActivatedKeys: Types.Array<string>,
     Callback: ActionHandler,
     DirectionCallbacks: DirectionCallbacks,
@@ -25,8 +26,9 @@ type Context = {
     MovementVelocity: Vector3,
     OffsetCallbacks: Types.Array<OffsetGenerator>,
 }
+type MovementContext = Context.Type<ContextDefaults>
 
-local function applyGravity(context: Context, delta: number)
+local function applyGravity(context: MovementContext, delta: number)
     local playerTorsoUnderside = player.Character.Torso.Position - Vector3.new(0, player.Character.Torso.Size.Y / 2)
     local directlyBelow = Vector3.new(0, -1 / 10, 0)
     local parameters = CustomRaycastParams.new({
@@ -67,7 +69,7 @@ local function extractKeyCodesFrom(directions: DirectionCallbacks): Types.Array<
     return keyCodes
 end
 
-local function adjustOrientation(context: Context)
+local function adjustOrientation(context: MovementContext)
     local isMoving = context.MovementVelocity ~= Vector3.zero
 
     if (isMoving and not player.Character.Turning.Enabled) or (not isMoving and player.Character.Turning.Enabled) then
@@ -80,7 +82,7 @@ local function adjustOrientation(context: Context)
     )
 end
 
-local function processMovement(context: Context, delta: number)
+local function processMovement(context: MovementContext, delta: number)
     local newMovementVelocity = Vector3.zero
 
     for _, key in context.ActivatedKeys do
@@ -117,7 +119,7 @@ local function processMovement(context: Context, delta: number)
     player.Character.Movement.VectorVelocity = newMovementVelocity
 end
 
-local function bindMovementToPlayerCharacter(context: Context)
+local function bindMovementToPlayerCharacter(context: MovementContext)
     local keys = extractKeyCodesFrom(context.DirectionCallbacks)
 
     ContextActionService:BindAction("Movement", context.Callback, false, table.unpack(keys))
@@ -150,14 +152,14 @@ function Movement.init(directions: DirectionCallbacks, callback: ActionHandler?)
         callback = handleMovementDefault
     end
 
-    local context: Context = {
+    local context: ContextDefaults = Context.create({
         ActivatedKeys = activatedKeys,
         Callback = callback :: ActionHandler,
         DirectionCallbacks = directions,
         FallingVelocity = Vector3.zero,
         MovementVelocity = movementVelocity,
         OffsetCallbacks = {},
-    }
+    })
 
     if player.Character then
         bindMovementToPlayerCharacter(context)
