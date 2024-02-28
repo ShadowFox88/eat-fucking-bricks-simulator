@@ -3,11 +3,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Context = require(ReplicatedStorage.Utils.Context)
 
-export type CameraContext = {
+export type CameraContext = Context.Type<{
     InFirstPerson: boolean,
     PanDelta: Vector2,
     ZoomFactor: number,
-}
+}>
 
 local cameraContext: CameraContext = Context.create({
     InFirstPerson = false,
